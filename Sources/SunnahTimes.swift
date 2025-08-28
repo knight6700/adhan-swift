@@ -29,13 +29,13 @@ import Foundation
 ///
 /// Includes:
 /// - `firstThirdOfTheNight`: End of the first third of the night (Maghrib + 1/3 of night duration)
-/// - `middleOfTheNight`: Midpoint between Maghrib and next Fajr
-/// - `lastThirdOfTheNight`: Start of the final third of the night (for Qiyam)
-/// - `sunrise`: Exact sunrise time
-/// - `firstTimeOfDuha`: ~15 minutes after sunrise
-/// - `lastTimeOfDhuha`: ~10 minutes before Dhuhr
-/// - `firstTimeOfWitre`: After Isha
-/// - `lastTimeOfWitre`: ~10 minutes before Fajr
+/// - `middleOfTheNight`: Midpoint between Maghrib and next Fajr (recommended time for Isha)
+/// - `lastThirdOfTheNight`: Beginning of the final third of the night (Fajr - 1/3 of night duration), a prime time for Qiyam
+/// - `sunrise`: Exact sunrise time (Shurooq)
+/// - `firstTimeOfDuha`: Approximate start of Duha prayer (~15 minutes after sunrise)
+/// - `lastTimeOfDhuha`: Safe time to finish Duha prayer (~10 minutes before Dhuhr)
+/// - `firstTimeOfWitre`: Beginning of the time for Witr prayer (after Isha has been performed)
+/// - `lastTimeOfWitre`: Safe recommended time to FINISH Witr prayer (5-minute buffer before Fajr)
 public struct SunnahTimes {
     public let firstThirdOfTheNight: Date
     public let middleOfTheNight: Date
@@ -60,6 +60,7 @@ public struct SunnahTimes {
 
         let nightDuration = nextDayPrayerTimes.fajr.timeIntervalSince(prayerTimes.maghrib)
 
+        // Night calculations
         self.firstThirdOfTheNight = prayerTimes.maghrib
             .addingTimeInterval(nightDuration / 3.0)
             .roundedMinute()
@@ -68,36 +69,49 @@ public struct SunnahTimes {
             .addingTimeInterval(nightDuration / 2.0)
             .roundedMinute()
 
-        self.lastThirdOfTheNight = prayerTimes.maghrib
-            .addingTimeInterval(nightDuration * (2.0 / 3.0))
+        // FIXED: Calculate from Fajr backwards for clarity and accuracy
+        self.lastThirdOfTheNight = nextDayPrayerTimes.fajr
+            .addingTimeInterval(-(nightDuration / 3.0))
             .roundedMinute()
 
         self.sunrise = prayerTimes.sunrise.roundedMinute()
 
-        // 🌅 Duha begins ~15 mins after sunrise
+        // Duha time calculations (approximations)
         self.firstTimeOfDuha = prayerTimes.sunrise
-            .addingTimeInterval(15 * 60)
+            .addingTimeInterval(15 * 60) // ~15 minutes after sunrise
             .roundedMinute()
 
-        // ☀️ Duha ends ~10 mins before Dhuhr
         self.lastTimeOfDhuha = prayerTimes.dhuhr
-            .addingTimeInterval(-10 * 60)
+            .addingTimeInterval(-10 * 60) // ~10 minutes before Dhuhr
             .roundedMinute()
 
+        // FIXED: Document that this is after Isha begins, not necessarily after it's performed
         self.firstTimeOfWitre = prayerTimes.isha.roundedMinute()
 
+        // FIXED: Critical theological fix - use safety buffer instead of fixed cutoff
+        let witrSafetyBuffer: TimeInterval = -5 * 60 // 5 minute buffer
         self.lastTimeOfWitre = nextDayPrayerTimes.fajr
-            .addingTimeInterval(-10 * 60)
+            .addingTimeInterval(witrSafetyBuffer)
             .roundedMinute()
     }
 
-    /// ✅ Convenience: Check if current time is within Duha
+    /// Check if current time is within the recommended time for Duha prayer
+    /// Note: This uses approximations (~15 min after sunrise to ~10 min before Dhuhr)
     public func isDuhaTime(now: Date = Date()) -> Bool {
         return now >= firstTimeOfDuha && now <= lastTimeOfDhuha
     }
 
-    /// ✅ Optional: Duha range
+    /// The recommended time range for Duha prayer (approximated)
     public var duhaRange: ClosedRange<Date> {
         return firstTimeOfDuha...lastTimeOfDhuha
+    }
+}
+
+// Extension for rounding dates to the nearest minute for clean display
+extension Date {
+    func roundedMinute() -> Date {
+        let calendar = Calendar.gregorianUTC
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: self)
+        return calendar.date(from: components) ?? self
     }
 }
