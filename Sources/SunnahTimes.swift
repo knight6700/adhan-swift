@@ -25,10 +25,6 @@
 
 import Foundation
 
-/* Sunnah times for a location and date using the given prayer times.
- All prayer times are in UTC and should be displayed using a DateFormatter
- that has the correct timezone set. */
-
 /// A struct representing additional Sunnah prayer times based on `PrayerTimes`.
 ///
 /// Includes:
@@ -36,6 +32,7 @@ import Foundation
 /// - `middleOfTheNight`: Midpoint between Maghrib and next Fajr
 /// - `lastThirdOfTheNight`: Start of the final third of the night (for Qiyam)
 /// - `sunrise`: Exact sunrise time
+/// - `firstTimeOfDuha`: ~15 minutes after sunrise
 /// - `lastTimeOfDhuha`: ~10 minutes before Dhuhr
 /// - `firstTimeOfWitre`: After Isha
 /// - `lastTimeOfWitre`: ~10 minutes before Fajr
@@ -44,6 +41,7 @@ public struct SunnahTimes {
     public let middleOfTheNight: Date
     public let lastThirdOfTheNight: Date
     public let sunrise: Date
+    public let firstTimeOfDuha: Date
     public let lastTimeOfDhuha: Date
     public let firstTimeOfWitre: Date
     public let lastTimeOfWitre: Date
@@ -76,14 +74,30 @@ public struct SunnahTimes {
 
         self.sunrise = prayerTimes.sunrise.roundedMinute()
 
+        // 🌅 Duha begins ~15 mins after sunrise
+        self.firstTimeOfDuha = prayerTimes.sunrise
+            .addingTimeInterval(15 * 60)
+            .roundedMinute()
+
+        // ☀️ Duha ends ~10 mins before Dhuhr
         self.lastTimeOfDhuha = prayerTimes.dhuhr
-            .addingTimeInterval(-10 * 60) // 10 minutes before Dhuhr
+            .addingTimeInterval(-10 * 60)
             .roundedMinute()
 
         self.firstTimeOfWitre = prayerTimes.isha.roundedMinute()
 
         self.lastTimeOfWitre = nextDayPrayerTimes.fajr
-            .addingTimeInterval(-10 * 60) // 10 minutes before Fajr
+            .addingTimeInterval(-10 * 60)
             .roundedMinute()
+    }
+
+    /// ✅ Convenience: Check if current time is within Duha
+    public func isDuhaTime(now: Date = Date()) -> Bool {
+        return now >= firstTimeOfDuha && now <= lastTimeOfDhuha
+    }
+
+    /// ✅ Optional: Duha range
+    public var duhaRange: ClosedRange<Date> {
+        return firstTimeOfDuha...lastTimeOfDhuha
     }
 }
