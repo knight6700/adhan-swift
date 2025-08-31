@@ -32,7 +32,7 @@ import Foundation
 /// - `middleOfTheNight`: Midpoint between Maghrib and next Fajr (recommended time for Isha)
 /// - `lastThirdOfTheNight`: Beginning of the final third of the night (Fajr - 1/3 of night duration), a prime time for Qiyam
 /// - `sunrise`: Exact sunrise time (Shurooq)
-/// - `firstTimeOfDuha`: Approximate start of Duha prayer (~15 minutes after sunrise)
+/// - `firstTimeOfDuha`: Approximate start of Duha prayer (~20 minutes after sunrise)
 /// - `lastTimeOfDhuha`: Safe time to finish Duha prayer (~10 minutes before Dhuhr)
 /// - `firstTimeOfWitre`: Beginning of the time for Witr prayer (after Isha has been performed)
 /// - `lastTimeOfWitre`: Safe recommended time to FINISH Witr prayer (5-minute buffer before Fajr)
@@ -70,15 +70,15 @@ public struct SunnahTimes {
             .roundedMinute()
 
         // FIXED: Calculate from Fajr backwards for clarity and accuracy
-        self.lastThirdOfTheNight = nextDayPrayerTimes.fajr
-            .addingTimeInterval(-(nightDuration / 3.0))
+        self.lastThirdOfTheNight = prayerTimes.maghrib
+            .addingTimeInterval(nightDuration * (2.0 / 3.0))
             .roundedMinute()
 
         self.sunrise = prayerTimes.sunrise.roundedMinute()
 
         // Duha time calculations (approximations)
         self.firstTimeOfDuha = prayerTimes.sunrise
-            .addingTimeInterval(15 * 60) // ~15 minutes after sunrise
+            .addingTimeInterval(20 * 60) // ~20 minutes after sunrise
             .roundedMinute()
 
         self.lastTimeOfDhuha = prayerTimes.dhuhr
